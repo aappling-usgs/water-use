@@ -5,19 +5,22 @@ line, polyline, path{
 }
 
 .map-background {
-  fill:#939393;
+  fill:white;
   stroke:none;
 }
 .state-background {
   fill:#f1f1f1;
-  stroke:#939393;
-  stroke-width:2;
+  stroke:#bdbdbd;
+  stroke-width:0.2;
 }
 .state-foreground {
   fill:lightgreen;
   stroke:none;
 }
 
+.cat-button-text {
+  font-size: 0.8em;
+}
 .hidden {
   opacity: 0;
 }
@@ -40,8 +43,16 @@ line, polyline, path{
 }
     
 .cat-button {
-  fill:black;
-  stroke:none;
+  fill:#e5e5e5;
+  stroke:#262626;
+  stroke-width: 1;
+  cursor:pointer;
+}
+
+.cat-button:hover {
+  fill:#404040;
+  stroke-width: 1.5;
+  stroke-opacity:1;
 }
 
 .Thermoelectric-button {

@@ -29,17 +29,16 @@ visualize.states_svg <- function(viz){
 
   library(xml2)
 
-  bump.width <- 200
-
+  top.buffer <- 36
   # let this thing scale:
   xml_attr(svg, "preserveAspectRatio") <- "xMidYMid meet"
   xml_attr(svg, "xmlns") <- 'http://www.w3.org/2000/svg'
   xml_attr(svg, "xmlns:xlink") <- 'http://www.w3.org/1999/xlink'
   xml_attr(svg, "id") <- "water-use-svg"
   vb.num <- as.numeric(strsplit(xml_attr(svg, 'viewBox'),'[ ]')[[1]])
-  vb.num[3] <- vb.num[3]+bump.width
-  xml_attr(svg, 'viewBox') <- sprintf('%s %s %s %s', vb.num[1], vb.num[2], vb.num[3], vb.num[4])
-
+  vb.num[4] <- vb.num[4] + top.buffer
+  vb.num[2] <- -top.buffer
+  xml_attr(svg, 'viewBox') <- paste(vb.num, collapse = ' ')
   vb <- strsplit(xml_attr(svg, 'viewBox'),'[ ]')[[1]]
   r <- xml_find_all(svg, '//*[local-name()="rect"]')
 
@@ -90,22 +89,28 @@ visualize.states_svg <- function(viz){
 
   }
 
-  
-  y.button <- 100
+  g.button <- xml_add_child(svg, 'g', 'id' = 'category-buttons', transform='translate(610,250)')
+  y.button <- as.character(seq(0, by=25, length.out=length(category.names)))
+  w.button <- "90"
+  h.button <- "20"
   for (name in category.names){
     id <- gsub(pattern = ' ','_',name)
-    xml_add_child(g.button, 'rect', x = as.character(vb.num[3]-bump.width*.8), y = as.character(y.button), height='20', width=as.character(bump.width*.7),
+    xml_add_child(g.button, 'rect',  y = y.button[1], height=h.button, width=w.button,
                   class=sprintf('%s-button',id))
-    xml_add_child(g.button, 'text', x=as.character(vb.num[3]-bump.width*.8), y = as.character(y.button), dy='1em', name, class='cat-button-text', fill='black','stroke'='none')
-    xml_add_child(g.button, 'rect', x = as.character(vb.num[3]-bump.width*.8), y = as.character(y.button), height='20', width=as.character(bump.width*.7),
+    xml_add_child(g.button, 'text', x=as.character(as.numeric(w.button)/2), y = y.button[1], dy='1.1em', name, 
+                  class='cat-button-text svg-text', fill='black','stroke'='none',
+                  'text-anchor'='middle')
+    xml_add_child(g.button, 'rect', y = y.button[1], height=h.button, width=w.button,
                   class='cat-button', id=id,
                   onclick=sprintf("setCategory('%s')", id))
-    y.button <- y.button+30
+    y.button <- tail(y.button, -1)
   }
 
-
+  clip <- xml_add_child(xml_add_child(g.tool, 'defs'), 'clipPath', id="tipClip")
+  xml_add_child(clip, 'rect', x='-6', y='-11.5', height='11', width='12')
   xml_add_child(g.tool, 'rect', id="tooltip-box", height="24", class="tooltip-box")
-  xml_add_child(g.tool, 'path', id="tooltip-point", d="M-6,-12 l6,10 l6,-10", class="tooltip-box", 'stroke-linecap'="butt")
+  xml_add_child(g.tool, 'path', id="tooltip-point", d="M-6,-12 l6,10 l6,-10", class="tooltip-box", 'clip-path'="url(#tipClip)")
+  
   xml_add_child(g.tool, 'text', id="tooltip-text", dy="-1.1em", 'text-anchor'="middle", class="svg-text", " ")
 
   xml_remove(p)
