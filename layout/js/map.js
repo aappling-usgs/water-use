@@ -29,19 +29,6 @@ var animate_resize_map = function(data) {
   });
 };
 
-var animate_update_tooltips = function(data) {
-  $.each(data, function() {
-    // create the tooltip text
-    var newtip = this.state_name + ': ' + this.value + ' million gallons per day'
-    // this section doesn't work. trying to assign that text to the hovertext 
-    // call for onmousemove for each object, but haven't found the way. help!
-    var newtipobj = {
-      "onmousemove": "hovertext('" + newtip + "', evt);"
-    };
-    $("#" + this.state_name + "-mouseover").mousemove = hovertext(newtip);
-  });
-}
-
 var animate_bars = function(data) {
 
   $.each(data, function(prop, val) {
@@ -89,8 +76,12 @@ var animate = function() {
   animate_bars(barsTransform);
 };
 
-var setCategory = function(cat, evt) {
+var setCategory = function(cat) {
   category = cat;
+  $('.cat-button').css("fill-opacity", '0.7');
+  $('.cat-button').css("stroke-opacity","0.0");
+  $('#' + cat).css("fill-opacity", "0.0");
+  $('#' + cat).css("stroke-opacity","1.0");
   animate();
 };
 
@@ -101,15 +92,16 @@ var setYear = function(yr) {
 
 $(document).ready(function(){
   get_resize_data();
-
   svg = document.querySelector("svg");
   pt = svg.createSVGPoint();
+  setCategory(category);
 });
 
 function hovertext(text, evt){
   var tooltip = document.getElementById("tooltip-text");
   var tooltip_bg = document.getElementById("tooltip-box");
   var tool_pt = document.getElementById("tooltip-point");
+  text = text + ': ' + 1000 + ' million gallons per day for ' + year + ' (' + category.replace(/_/g, ' ') +')';
   if (evt === undefined){
     tooltip.firstChild.data = ' ';
     tooltip_bg.setAttribute("class","hidden");
