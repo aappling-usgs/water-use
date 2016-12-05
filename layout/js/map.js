@@ -1,29 +1,61 @@
 var transformData = undefined;
 var svg = undefined;
 var pt = undefined;
+
 var category = "Total";
 var year = "1950";
 var transitionTime = "1s";
 var colors = {
-  "Thermoelectric": "#EFBA5A",
-  "Public_Supply": "#857EB0",
-  "Industrial": "#A38775",
-  "Irrigation": "#61B4A9",
-  "Total": "#92C5EA"
+  "Thermoelectric": "#FCBA04",
+  "Public_Supply": "#BA3228",
+  "Industrial": "#8A716A",
+  "Irrigation": "#9BC53D",
+  "Total": "#2E86AB"
 };
+
+$(document).ready(function(){
+  get_data();
+  svg = document.querySelector("svg");
+  pt = svg.createSVGPoint();
+  for (var cat in colors) {
+    var catButton = $("#" + cat + '-button');
+    catButton.css({'fill': colors[cat]});
+  }
+
+  var set_slider_click = function(x) {
+    $("#bar-" + x).on("click", function(){
+      $("#slider")[0].noUiSlider.set(x);
+    });
+  };
+
+  var yr = 1950;
+  while (yr <= 2015) {
+    set_slider_click(yr);
+    yr += 5;
+  }
+});
 
 /* depends on jquery */
 var animate_resize_map = function(data) {
   var color = colors[category];
   $.each(data, function(index, val) {
-    var scale = val.scaleFactor;
+    var scale = Math.sqrt(val.scaleFactor);
     var style = {
       "fill": color,
       "transform": "scale3d(" + scale + "," + scale + ",1)",
+      "stroke":"none",
       "transition": "all " + transitionTime + " ease-in-out"
     };
     var state = $("#" + val.state_name);
     if (state !== undefined) {
+      if (isNaN(scale)){ // doesn't seem to work?
+        style = {
+          "fill":"url(#nodata)",
+          "transform": "scale3d(1,1,1)",
+          "stroke":"#f1f1f1",
+          "transition": "all 0s"
+        };
+      }
       state.css(style);
     }
   });
@@ -47,12 +79,7 @@ var animate_bars = function(data) {
   $.each(data, function(prop, val) {
     var myYear = prop;
     var color = colors[category];
-    if (myYear > year) {
-      color = "#E0E0E0";
-    }
-
     var scale = val[category][0]["barScale"];
-    // if we want tooltips
     var value = val[category][0]["value"];
     var style = {
       "background": color,
@@ -63,21 +90,58 @@ var animate_bars = function(data) {
     var bar = $("#bar-" + myYear);
     if (bar !== undefined) {
       bar.css(style);
+      if (myYear !== year) {
+        bar.css('opacity','0.25');
+      } else {
+        bar.css('opacity','1.0');
+      }
+      value = value.toLocaleString() + ' mgd';
+      bar.attr("title", value);
     }
   });
+  update_bar_tips();
 };
 
-var get_resize_data = function() {
+var get_state_value = (function() {
+  var prevState = "";
+  var prevCat = "";
+  var prevYear = "";
+  var prevVal = "";
+  var sameHover = function(state) {
+    return (prevState === state &&
+            prevCat === category &&
+            prevYear == year);
+  }
+  return function(state) {
+    if (transformData !== undefined && !sameHover(state)) {
+        prevState = state;
+        prevCat = category;
+        prevYear = year;
+
+        var stateData = transformData["totState"][year][category];
+        prevVal = function(allData) {
+          for (var i = 0; i < allData.length; i++) {
+            if (allData[i]['state_name'] === state){
+              return allData[i]['value'];
+            }
+          }
+        }(stateData);
+    }
+    return prevVal;
+  }
+})();
+
+var get_data = function() {
   $.get( "js/scaleFactors.json", function( data ) {
     transformData = data;
-
-    animate();
 
     var slider = document.getElementById('slider');
     slider.noUiSlider.on('update', function( values, handle ) {
   	  var year = "" + Math.round(values[handle]);
     	setYear(year);
     });
+
+    setCategory(category);
   });
 };
 
@@ -89,8 +153,12 @@ var animate = function() {
   animate_bars(barsTransform);
 };
 
-var setCategory = function(cat, evt) {
+var setCategory = function(cat) {
   category = cat;
+  $('.cat-button').css("fill-opacity", '0.7');
+  $('.cat-button').css("stroke-opacity","0.0");
+  $('#' + cat).css("fill-opacity", "0.0");
+  $('#' + cat).css("stroke-opacity","1.0");
   animate();
 };
 
@@ -99,12 +167,19 @@ var setYear = function(yr) {
   animate();
 };
 
-$(document).ready(function(){
-  get_resize_data();
+var update_bar_tips = function() {
+  $.each($(".dataBar"), function(prop, val){
+    $(val).off("mouseenter mouseleave");
 
-  svg = document.querySelector("svg");
-  pt = svg.createSVGPoint();
-});
+    if ($(val).data("tooltipsy") !== undefined) {
+      $(val).data("tooltipsy").destroy()
+    }
+  });
+  $('.hastip').tooltipsy({
+    delay: 50,
+    offset: [0, -10]
+  });
+}
 
 function hovertext(text, evt){
   var tooltip = document.getElementById("tooltip-text");
@@ -115,7 +190,17 @@ function hovertext(text, evt){
     tooltip_bg.setAttribute("class","hidden");
     tooltip_bg.setAttribute("x",0);
     tool_pt.setAttribute("class","hidden");
+    stateVal = " ";
   } else {
+    var ref = evt.target.getAttribute('xlink:href').split('-')[0];
+    var stateName = ref.replace(/#/g, '');
+    var displayNum = Math.round(get_state_value(stateName));
+    if (isNaN(displayNum)){
+      displayNum = 'no data';
+    } else {
+      displayNum = displayNum.toLocaleString() + ' mgd';
+    }
+    text = text + ': ' + displayNum;
     pt = cursorPoint(evt);
     pt.x = Math.round(pt.x);
     pt.y = Math.round(pt.y);
