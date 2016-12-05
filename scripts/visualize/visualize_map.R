@@ -58,6 +58,7 @@ visualize.states_svg <- function(viz){
   xml_add_child(cp, 'rect', width=vb[3], height=vb[4])
   gb <- xml_add_child(svg, 'g', 'id' = 'state-backgrounds')
   gf <- xml_add_child(svg, 'g', 'id' = 'state-foregrounds')
+  g.button <- xml_add_child(svg, 'g', 'id' = 'category-buttons')
   g.tool <- xml_add_child(svg,'g',id='tooltip-group')
   gm <- xml_add_child(svg, 'g', 'id' = 'state-mouseovers')
 
